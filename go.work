@@ -1,0 +1,8 @@
+go 1.22.5
+
+use (
+	./services/auth
+	./shared/contracts
+	./shared/logger
+	./shared/telemetry
+)

@@ -1,0 +1,90 @@
+name: bookstore-devel
+
+include:
+  - path: ./compose.observability.yml
+
+services:
+  nginx:
+    image: ${NGINX_IMAGE}
+    restart: always
+    # depends_on:
+    #   pgadmin:
+    #     condition: service_healthy
+    ports:
+      - ${NGINX_PORT_EXPOSE}
+    configs:
+      - source: nginx
+        target: /etc/nginx/nginx.conf
+    networks:
+      - public
+
+  auth-postgres:
+    image: ${SERVICE_AUTH_POSTGRES_IMAGE}
+    ports:
+      - ${SERVICE_AUTH_POSTGRES_PORT}:5432
+    secrets:
+      - pg_password
+    environment:
+      - POSTGRES_USER=${SERVICE_AUTH_POSTGRES_USER}
+      - POSTGRES_DB=${SERVICE_AUTH_POSTGRES_DB}
+      - POSTGRES_PASSWORD_FILE=${SERVICE_AUTH_POSTGRES_PASSWORD_FILE}
+    volumes:
+      - auth-postgres:/var/lib/postgresql/data
+    networks:
+      - private
+
+  pgadmin:
+    image: ${PGADMIN_IMAGE}
+    depends_on:
+      - auth-postgres
+    ports:
+      - ${PGADMIN_PORT}:80
+    secrets:
+      - pgadmin_password
+      - pgadmin_pgpassfile
+    configs:
+      - source: pgadmin
+        target: /pgadmin4/servers.json
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD_FILE=${PGADMIN_DEFAULT_PASSWORD_FILE}
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "http://localhost:80/misc/ping"]
+      interval: 5s
+      timeout: 10s
+      start_period: 15s
+    networks:
+      - public
+      - private
+
+secrets:
+  pg_password:
+    file: ./secrets/pg_password
+  pgadmin_password:
+    file: ./secrets/pgadmin_password
+  pgadmin_pgpassfile:
+    file: ./secrets/pgadmin_pgpassfile
+
+configs:
+  auth:
+    file: ./configs/service.auth.yml
+  nginx:
+    file: ./configs/nginx.conf
+  pgadmin:
+    file: ./configs/pgadmin.servers.json
+
+volumes:
+  auth-postgres:
+  pgadmin:
+
+networks:
+  private:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.0/27
+          gateway: 10.0.0.1
+
+  public:

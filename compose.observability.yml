@@ -1,0 +1,89 @@
+name: observability-devel
+
+x-default-logging: &logging
+  driver: "json-file"
+  options:
+    max-size: "5m"
+    max-file: "2"
+    tag: "{{.Name}}"
+
+services:
+  observability-collector:
+    image: ${OTEL_COLLECTOR_IMAGE}
+    depends_on:
+      - observability-jaeger
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 200M
+    restart: unless-stopped
+    user: 0:0
+    configs:
+      - source: observability-collector
+        target: /etc/config.yaml
+    volumes:
+      - ${DOCKER_SOCK}:/var/run/docker.sock:ro
+    command: [ "--config=/etc/config.yaml" ]
+    ports:
+      - ${OTEL_COLLECTOR_PORT_GRPC}:${OTEL_COLLECTOR_PORT_GRPC}
+      - ${OTEL_COLLECTOR_PORT_PROMETHEUS_EXPOSED}
+      - ${OTEL_COLLECTOR_PORT_PROMETHEUS_EXPORTER}
+    environment:
+      - JAEGER_HOST
+      - JAEGER_PORT_GRPC
+      - OTEL_COLLECTOR_HOST
+      - OTEL_COLLECTOR_PORT_GRPC
+    networks:
+      - private
+
+  observability-jaeger:
+    image: ${JAEGER_IMAGE}
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+    restart: unless-stopped
+    command:
+      - "--memory.max-traces=5000"
+      - "--query.base-path=/jaeger/ui"
+    ports:
+      - "${JAEGER_PORT_UI}:${JAEGER_PORT_UI}"
+    environment:
+      - METRICS_STORAGE_TYPE=${JAEGER_METRICS_STORAGE_TYPE}
+      - PROMETHEUS_SERVER_URL=${JAEGER_PROMETHEUS_SERVER_URL}
+    logging: *logging
+    networks:
+      - private
+
+  observability-prometheus:
+    image: ${PROMETHEUS_IMAGE}
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+    restart: unless-stopped
+    configs:
+      - source: observability-prometheus
+        target: /etc/prometheus/config.yml
+    command:
+      - --web.console.templates=/etc/prometheus/consoles
+      - --web.console.libraries=/etc/prometheus/console_libraries
+      - --storage.tsdb.retention.time=1h
+      - --config.file=/etc/prometheus/config.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+      - --web.route-prefix=/
+      - --enable-feature=exemplar-storage
+      - --enable-feature=otlp-write-receiver
+    ports:
+      - ${PROMETHEUS_PORT}:9090
+    logging: *logging
+    networks:
+      - private
+
+configs:
+  observability-collector:
+    file: ./configs/opentelemetry-collector.yml
+  observability-prometheus:
+    file: ./configs/prometheus.yml

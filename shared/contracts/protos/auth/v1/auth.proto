@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package auth.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github/neb-ep/auth/pkg/auth;auth";
+
+// Сервис для регистрации и управлением доступа пользователей.
+service AuthService {
+  // Запрос на регистрацию пользователя
+  rpc SignUp(SignUpRequest) returns (SignUpResponse);
+
+  // Запрос на аутентификацию пользователя
+  rpc SignIn(SignInRequest) returns (SignInResponse);
+}
+
+message SignUpRequest {
+  string username = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
+  string password = 5;
+}
+
+message SignUpResponse {
+  string username = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
+}
+
+message SignInRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message SignInResponse {
+  message Token {
+    string data = 1;
+    google.protobuf.Timestamp expireIn = 2;
+  }
+
+  Token access = 1;
+  Token refresh = 2;
+}

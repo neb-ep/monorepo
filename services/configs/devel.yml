@@ -1,0 +1,11 @@
+telemetry:
+  service:
+    name: auth-service
+    version: 0.0.1
+    environment: dev
+
+server:
+  addr: :9190
+
+logger:
+  level: debug

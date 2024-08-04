@@ -1,0 +1,49 @@
+receivers:
+  otlp/auth-service:
+    protocols:
+      grpc:
+        endpoint: ${env:OTEL_COLLECTOR_HOST}:${env:OTEL_COLLECTOR_PORT_GRPC}
+
+processors:
+  batch:
+
+exporters:
+  debug:
+
+  logging:
+
+  otlp:
+    endpoint: ${env:JAEGER_HOST}:${env:JAEGER_PORT_GRPC}
+    tls:
+      insecure: true
+
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    const_labels:
+      label1: value1
+
+extensions:
+  health_check:
+  pprof:
+  zpages:
+
+service:
+  extensions: 
+    - health_check
+    - pprof
+    - zpages
+  pipelines:
+    traces/dev:
+      receivers:
+        - otlp/auth-service
+      processors:
+        - batch
+      exporters:
+        - otlp
+    metrics/dev:
+      receivers: 
+        - otlp/auth-service
+      processors: 
+        - batch
+      exporters: 
+        - prometheus

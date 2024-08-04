@@ -1,0 +1,24 @@
+{
+	"folders": [
+        {
+            "path": ".."
+        },
+        {
+            "path": "../services/auth",
+            "name": "service: auth"
+        },
+        {
+            "path": "../shared/contracts",
+            "name": "shared: contracts"
+        },
+        {
+            "path": "../shared/telemetry",
+            "name": "shared: telemetry"
+        },
+        {
+            "path": "../shared/logger",
+            "name": "shared: logger"
+        }
+    ],
+    "settings": {}
+}
