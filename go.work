@@ -3,6 +3,7 @@ go 1.22.5
 use (
 	./services/auth
 	./shared/contracts
+	./shared/database
 	./shared/logger
 	./shared/telemetry
 )

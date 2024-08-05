@@ -1,8 +1,14 @@
 package logger
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"os"
+
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -27,5 +33,30 @@ func InitLogger(config Config) {
 		attrServiceName, config.Name,
 		attrServiceVersion, config.Version,
 		attrServiceEnvironment, config.Environment),
+	)
+}
+
+func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
+	return logging.UnaryServerInterceptor(
+		logging.LoggerFunc(func(_ context.Context, lvl logging.Level, msg string, fields ...any) {
+			switch lvl {
+			case logging.LevelDebug:
+				slog.Debug(msg, fields...)
+			case logging.LevelInfo:
+				slog.Info(msg, fields...)
+			case logging.LevelWarn:
+				slog.Warn(msg, fields...)
+			case logging.LevelError:
+				slog.Error(msg, fields...)
+			default:
+				panic(fmt.Sprintf("unknown level %v", lvl))
+			}
+		}),
+		logging.WithFieldsFromContext(func(ctx context.Context) logging.Fields {
+			if span := trace.SpanContextFromContext(ctx); span.IsSampled() {
+				return logging.Fields{"traceId", span.TraceID().String()}
+			}
+			return nil
+		}),
 	)
 }

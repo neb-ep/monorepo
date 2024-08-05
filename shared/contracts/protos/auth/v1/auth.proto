@@ -4,7 +4,7 @@ package auth.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github/neb-ep/auth/pkg/auth;auth";
+option go_package = "github.com/neb-ep/shared/contracts/protos/auth/v1;authv1";
 
 // Сервис для регистрации и управлением доступа пользователей.
 service AuthService {

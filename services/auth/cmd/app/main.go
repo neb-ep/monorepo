@@ -9,43 +9,22 @@ import (
 	"runtime/debug"
 	"syscall"
 
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
+	"github.com/neb-ep/monorepo/services/auth/internal/app"
+	"github.com/neb-ep/monorepo/services/auth/internal/service"
+	"github.com/neb-ep/monorepo/services/auth/internal/storage"
+	"github.com/neb-ep/monorepo/shared/database"
 	"github.com/neb-ep/monorepo/shared/logger"
 	"github.com/neb-ep/monorepo/shared/telemetry"
-	authv1pb "github.com/neb-ep/shared/contracts/protos/auth/v1"
+	authv1 "github.com/neb-ep/shared/contracts/protos/auth/v1"
+
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
 
-// -------------------- CONFIGS (BEGIN) --------------------
 type Config struct {
-	Name        string `yaml:"name"`
-	Version     string `yaml:"version"`
-	Environment string `yaml:"environment"`
-}
-
-// --------------------  CONFIGS (END)  --------------------
-
-// --------------------   API (BEGIN)   --------------------
-type api struct {
-	authv1pb.UnimplementedAuthServiceServer
-}
-
-// SignIn implements auth.AuthServiceServer.
-func (a *api) SignIn(context.Context, *authv1pb.SignInRequest) (*authv1pb.SignInResponse, error) {
-	panic("unimplemented")
-}
-
-// SignUp implements auth.AuthServiceServer.
-func (a *api) SignUp(context.Context, *authv1pb.SignUpRequest) (*authv1pb.SignUpResponse, error) {
-	panic("unimplemented")
-}
-
-// --------------------    API (END)   --------------------
-
-type AppConfig struct {
 	Name        string `yaml:"name"`
 	Version     string `yaml:"version"`
 	Environment string `yaml:"environment"`
@@ -56,7 +35,7 @@ func main() {
 	ctx := context.Background()
 
 	// Config
-	conf := AppConfig{
+	conf := Config{
 		Name:        "auth-service",
 		Version:     "v0.0.1",
 		Environment: "devel",
@@ -78,6 +57,7 @@ func main() {
 	})
 	if err != nil {
 		slog.Error("failed telemetry.NewTraceProvider", "error", err)
+		os.Exit(1)
 	}
 	defer func() {
 		if err := tp.Shutdown(ctx); err != nil {
@@ -92,6 +72,7 @@ func main() {
 	})
 	if err != nil {
 		slog.Error("failed telemetry.NewMeterProvider", "error", err)
+		os.Exit(1)
 	}
 	defer func() {
 		if err := mp.Shutdown(ctx); err != nil {
@@ -103,6 +84,7 @@ func main() {
 	lis, err := net.Listen("tcp", ":9091")
 	if err != nil {
 		slog.Error("failed to start listen", "error", err)
+		os.Exit(1)
 	}
 
 	srv := grpc.NewServer(
@@ -112,11 +94,26 @@ func main() {
 				slog.Error("recovered from panic", "panic", p, "stack", debug.Stack())
 				return status.Errorf(codes.Internal, "%s", p)
 			})),
+			logger.UnaryServerInterceptor(),
 		),
 	)
 
-	authv1pb.RegisterAuthServiceServer(srv, &api{})
+	slog.Debug("create new postgres connection pool")
+	pool, err := database.NewPostgres(ctx, &database.Config{
+		ConnectionURL: "postgres://devel:devel@localhost:5432/devel?sslmode=disable",
+	}, slog.Default())
+	if err != nil {
+		slog.Error("failed to create new postgres connection pool", "error", err)
+		os.Exit(1)
+	}
+	defer func() {
+		slog.Info("closing connection pool")
+		pool.Close()
+	}()
 
+	storage := storage.NewStorage(pool)
+	service := service.NewService(storage)
+	authv1.RegisterAuthServiceServer(srv, app.NewApi(service))
 	reflection.Register(srv)
 
 	ctx, cancelFunc := signal.NotifyContext(ctx,

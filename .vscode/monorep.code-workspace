@@ -18,6 +18,10 @@
         {
             "path": "../shared/logger",
             "name": "shared: logger"
+        },
+        {
+            "path": "../shared/database",
+            "name": "shared: database"
         }
     ],
     "settings": {}
