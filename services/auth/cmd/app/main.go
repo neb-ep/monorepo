@@ -8,10 +8,13 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"syscall"
+	"time"
 
 	"github.com/neb-ep/monorepo/services/auth/internal/app"
-	"github.com/neb-ep/monorepo/services/auth/internal/service"
-	"github.com/neb-ep/monorepo/services/auth/internal/storage"
+	"github.com/neb-ep/monorepo/services/auth/internal/services"
+	"github.com/neb-ep/monorepo/services/auth/internal/storages"
+	"github.com/neb-ep/monorepo/services/auth/pkg/hasher"
+	"github.com/neb-ep/monorepo/services/auth/pkg/jwt"
 	"github.com/neb-ep/monorepo/shared/database"
 	"github.com/neb-ep/monorepo/shared/logger"
 	"github.com/neb-ep/monorepo/shared/telemetry"
@@ -111,8 +114,10 @@ func main() {
 		pool.Close()
 	}()
 
-	storage := storage.NewStorage(pool)
-	service := service.NewService(storage)
+	storage := storages.NewStorage(pool)
+	service := services.NewService(storage,
+		hasher.NewHasher(hasher.MinCost),
+		jwt.NewJWTHelper("secret", 15*time.Minute))
 	authv1.RegisterAuthServiceServer(srv, app.NewApi(service))
 	reflection.Register(srv)
 

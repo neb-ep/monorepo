@@ -5,24 +5,38 @@
         },
         {
             "path": "../services/auth",
-            "name": "service: auth"
+            "name": "service-auth"
         },
         {
             "path": "../shared/contracts",
-            "name": "shared: contracts"
+            "name": "shared-contracts"
         },
         {
             "path": "../shared/telemetry",
-            "name": "shared: telemetry"
+            "name": "shared-telemetry"
         },
         {
             "path": "../shared/logger",
-            "name": "shared: logger"
+            "name": "shared-logger"
         },
         {
             "path": "../shared/database",
-            "name": "shared: database"
+            "name": "shared-database"
         }
     ],
-    "settings": {}
+    "settings": {},
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "auth-service",
+                "type": "go",
+                "request": "launch",
+                "mode": "auto",
+                "program": "${workspaceFolder:service-auth}/cmd/app/main.go",
+                "cwd": "${workspaceFolder:service-auth}"
+            }
+        ],
+        "compounds": []
+    }
 }

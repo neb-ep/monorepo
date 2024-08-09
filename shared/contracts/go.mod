@@ -3,7 +3,7 @@ module github.com/neb-ep/shared/contracts
 go 1.22.5
 
 require (
-	github.com/golang/protobuf v1.5.4
+	github.com/envoyproxy/protoc-gen-validate v1.1.0
 	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.2
 )

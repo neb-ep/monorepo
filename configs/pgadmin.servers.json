@@ -5,7 +5,7 @@
             "Group": "Servers",
             "Port": 5432,
             "Username": "devel",
-            "Host": "postgres",
+            "Host": "auth-postgres",
             "MaintenanceDB": "devel",
             "PassFile": "/run/secrets/pgadmin_pgpassfile",
             "SSLMode": "disable"

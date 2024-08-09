@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package auth.v1;
 
-import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
 
 option go_package = "github.com/neb-ep/shared/contracts/protos/auth/v1;authv1";
 
@@ -16,11 +16,21 @@ service AuthService {
 }
 
 message SignUpRequest {
-  string username = 1;
-  string first_name = 2;
-  string last_name = 3;
-  string email = 4;
-  string password = 5;
+  string username = 1 [
+    (validate.rules).string = {min_len: 6, max_len: 255, ignore_empty: false}
+  ];
+  string first_name = 2 [
+    (validate.rules).string = {min_len: 6, max_len: 255, ignore_empty: false}
+  ];
+  string last_name = 3 [
+    (validate.rules).string = {min_len: 6, max_len: 255, ignore_empty: false}
+  ];
+  string email = 4 [
+    (validate.rules).string = {email: true, ignore_empty: false}
+  ];
+  string password = 5 [
+    (validate.rules).string = {min_len: 8, max_len: 64, ignore_empty: false}
+  ];
 }
 
 message SignUpResponse {
@@ -36,11 +46,6 @@ message SignInRequest {
 }
 
 message SignInResponse {
-  message Token {
-    string data = 1;
-    google.protobuf.Timestamp expireIn = 2;
-  }
-
-  Token access = 1;
-  Token refresh = 2;
+  string accessToken = 1;
+  string refreshToken = 2;
 }
