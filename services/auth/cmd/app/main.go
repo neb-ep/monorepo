@@ -28,9 +28,10 @@ import (
 )
 
 type Config struct {
-	Name        string `yaml:"name"`
-	Version     string `yaml:"version"`
-	Environment string `yaml:"environment"`
+	Name        string        `yaml:"name"`
+	Version     string        `yaml:"version"`
+	Environment string        `yaml:"environment"`
+	Logger      logger.Config `yaml:"logger"`
 }
 
 func main() {
